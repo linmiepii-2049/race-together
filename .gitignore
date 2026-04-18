@@ -1,0 +1,16 @@
+# Godot
+.godot/
+*.import
+
+# Export
+export_presets.cfg
+*.pck
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+*.code-workspace
