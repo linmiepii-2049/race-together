@@ -20,7 +20,7 @@ config/features=PackedStringArray("4.6", "Forward Plus")
 
 [racecar]
 
-## Web 匯出後預設信令網址（wss://…）；留空則改讀網址列 `?signal=` 或見 DEPLOY.md。
+; Web 預設信令 wss 網址；留空則讀網址 ?signal= 或見 DEPLOY.md。
 signaling_url_web=""
 
 [autoload]
