@@ -5,9 +5,6 @@ extends Node2D
 const TILE_COUNT := 4
 
 @export_file("*.png") var road_texture_path: String = "res://assets/backgrounds/road_tile_topdown.png"
-## 道路在畫面上相對「左右邊界 half_lane_width」的寬度比例（0~1）
-@export var road_width_ratio: float = 0.88
-
 var balance: Resource
 var _scroll: Node
 var _scroll_accum: float = 0.0
@@ -44,7 +41,8 @@ func _build_tiles() -> void:
 	var sz: Vector2 = tex.get_size()
 	if sz.x < 1.0 or sz.y < 1.0:
 		return
-	var play_w: float = balance.half_lane_width * 2.0 * clampf(road_width_ratio, 0.2, 1.0)
+	var ratio: float = clampf(balance.road_width_ratio, 0.2, 1.0)
+	var play_w: float = balance.half_lane_width * 2.0 * ratio
 	var s: float = play_w / sz.x
 	_tile_h = sz.y * s
 	for i in TILE_COUNT:

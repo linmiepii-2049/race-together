@@ -41,3 +41,5 @@ func _physics_process(delta: float) -> void:
 	position.y += _scroll.get_scroll_speed() * delta
 	_t += delta * 3.3
 	position.x += cos(_t) * _balance.drone_lateral_speed * delta
+	var lim: float = _balance.get_road_playfield_half_width()
+	position.x = clampf(position.x, -lim, lim)

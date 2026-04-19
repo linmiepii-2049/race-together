@@ -83,7 +83,7 @@ func _pick_kind_weighted() -> ObstacleKind:
 
 
 func _spawn_one() -> void:
-	var half: float = balance.half_lane_width
+	var half: float = balance.get_road_playfield_half_width()
 	var margin: float = balance.spawn_margin_x
 	var x: float = _rng.randf_range(-half + margin, half - margin)
 	var y: float = balance.spawn_y

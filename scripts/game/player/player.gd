@@ -28,6 +28,8 @@ const _MULTIPLAYER_CAR_MODULATES: Array[Color] = [
 const _SOLO_CAR_MODULATE := Color(0.62, 0.88, 1.0, 1.0)
 
 var _machine: Node
+##  hurtbox 在車身左右佔寬的一半，夾車道時須扣掉以免貼圖越線。
+var _lateral_bb_half: float = 0.0
 var _car_body_modulate_base: Color = Color.WHITE
 var _suppress_shield_pulse_until_usec: int = 0
 var _invuln_pickup_flash_tween: Tween
@@ -39,6 +41,7 @@ func _ready() -> void:
 		if tex != null:
 			car_body.texture = tex
 			_sync_hurtbox_to_car_sprite()
+			_refresh_lateral_bb_half()
 
 
 func _sync_hurtbox_to_car_sprite() -> void:
@@ -72,7 +75,44 @@ func setup(
 	EventBus.run_player_damaged.connect(_on_player_damaged)
 	EventBus.pickup_invulnerability_started.connect(_on_pickup_invulnerability_started)
 	EventBus.pickup_invulnerability_for_peer.connect(_on_pickup_invulnerability_for_peer)
+	_refresh_lateral_bb_half()
 	_apply_car_body_modulate()
+
+
+func _refresh_lateral_bb_half() -> void:
+	_lateral_bb_half = 0.0
+	if hurtbox != null:
+		var cs := hurtbox.get_node_or_null("CollisionShape2D") as CollisionShape2D
+		if cs != null and cs.shape is RectangleShape2D:
+			var rect := cs.shape as RectangleShape2D
+			_lateral_bb_half = rect.size.x * 0.5 * absf(cs.scale.x)
+	if car_body != null and car_body.texture != null:
+		var tw: float = car_body.texture.get_width() * absf(car_body.scale.x)
+		_lateral_bb_half = maxf(_lateral_bb_half, tw * 0.5)
+
+
+func _lateral_position_limit() -> float:
+	if balance == null:
+		return 400.0
+	var lane_half: float = balance.get_player_lateral_limit_half()
+	var safety: float = float(balance.player_lateral_safety_px)
+	return maxf(4.0, lane_half - _lateral_bb_half - safety)
+
+
+## 供 MultiplayerCoordinator 同步遠端車 X 時使用（與本機夾限一致）。
+func get_sync_lateral_clamp_half() -> float:
+	return _lateral_position_limit()
+
+
+func _enforce_lateral_bounds() -> void:
+	if balance == null:
+		return
+	var lim: float = _lateral_position_limit()
+	position.x = clampf(position.x, -lim, lim)
+
+
+func _physics_process(_delta: float) -> void:
+	_enforce_lateral_bounds()
 
 
 func _apply_car_body_modulate() -> void:
@@ -123,8 +163,8 @@ func apply_control(steer_axis: float, handbrake_pressed: bool, handbrake_held: b
 	var max_sp: float = balance.max_lateral_speed * lerpf(1.0, 0.72, speed_ratio * 0.85)
 	lateral_vel = clampf(lateral_vel, -max_sp, max_sp)
 	position.x += lateral_vel * delta
-	var half: float = balance.half_lane_width
-	position.x = clampf(position.x, -half, half)
+	var lim: float = _lateral_position_limit()
+	position.x = clampf(position.x, -lim, lim)
 	velocity = Vector2.ZERO
 	if thruster:
 		thruster.emitting = abs(steer_axis) > 0.05 or handbrake_held

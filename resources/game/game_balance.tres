@@ -33,3 +33,6 @@ laser_on_sec = 0.55
 laser_off_sec = 0.75
 player_anchor_y = 560.0
 half_lane_width = 420.0
+road_width_ratio = 0.88
+player_clamp_to_track_outer_lines = true
+player_lateral_safety_px = 8.0

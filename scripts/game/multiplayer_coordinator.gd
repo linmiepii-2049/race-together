@@ -121,7 +121,10 @@ func rpc_player_lateral(peer_id: int, lateral_x: float) -> void:
 	var pc: Node2D = _game_root.get_node("World/Players") as Node2D
 	var n := pc.get_node_or_null("Player_%d" % peer_id)
 	if n is CharacterBody2D:
-		(n as CharacterBody2D).position.x = lateral_x
+		var lim: float = 400.0
+		if n.has_method("get_sync_lateral_clamp_half"):
+			lim = float(n.call("get_sync_lateral_clamp_half"))
+		(n as CharacterBody2D).position.x = clampf(lateral_x, -lim, lim)
 
 
 @rpc("call_local", "reliable")

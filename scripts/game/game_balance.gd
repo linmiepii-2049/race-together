@@ -45,3 +45,21 @@ extends Resource
 @export_group("Playfield")
 @export var player_anchor_y: float = 560.0
 @export var half_lane_width: float = 420.0
+## 與 RoadVisual 道路貼圖寬度一致；高光邊界約在 ±(half_lane_width * ratio)。
+@export_range(0.2, 1.0) var road_width_ratio: float = 0.88
+## true：以 Track 格線半寬 half_lane_width 為「上限」，但不會寬於道路貼圖（與 RoadVisual 一致），避免車身落在 PNG 高光線外。
+## false：僅以道路貼圖可玩半寬 ±(half_lane_width * road_width_ratio) 夾限。
+@export var player_clamp_to_track_outer_lines: bool = true
+## 再內縮幾像素，避免貼圖抗鋸齒／半寬估算誤差看起來越線。
+@export_range(0.0, 48.0) var player_lateral_safety_px: float = 8.0
+
+
+func get_road_playfield_half_width() -> float:
+	return half_lane_width * clampf(road_width_ratio, 0.2, 1.0)
+
+
+func get_player_lateral_limit_half() -> float:
+	var road_half: float = get_road_playfield_half_width()
+	if player_clamp_to_track_outer_lines:
+		return minf(half_lane_width, road_half)
+	return road_half
