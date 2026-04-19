@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3 uid="uid://obstacle_laser"]
+
+[ext_resource type="Script" path="res://scripts/game/obstacles/obstacle_laser.gd" id="1_script"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_beam"]
+size = Vector2(99, 54)
+
+[node name="ObstacleLaser" type="Area2D"]
+collision_layer = 2
+collision_mask = 0
+monitoring = true
+monitorable = true
+script = ExtResource("1_script")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_beam")
+
+[node name="Beam" type="Sprite2D" parent="."]
+centered = true
+scale = Vector2(0.03515625, 0.03515625)

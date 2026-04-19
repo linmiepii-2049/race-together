@@ -1,0 +1,109 @@
+[gd_scene load_steps=9 format=3 uid="uid://game_root"]
+
+[ext_resource type="Script" path="res://scripts/game/game_root.gd" id="1_root"]
+[ext_resource type="Script" path="res://scripts/game/run_session.gd" id="2_run"]
+[ext_resource type="Script" path="res://scripts/game/scroll_controller.gd" id="3_scroll"]
+[ext_resource type="Script" path="res://scripts/game/obstacle_spawner.gd" id="4_spawn"]
+[ext_resource type="PackedScene" path="res://scenes/game/player/Player.tscn" id="5_player"]
+[ext_resource type="Script" path="res://scripts/game/ui/game_hud.gd" id="6_hud"]
+[ext_resource type="Script" path="res://scripts/game/road_visual.gd" id="7_road"]
+[ext_resource type="Script" path="res://scripts/game/multiplayer_coordinator.gd" id="8_coord"]
+
+[node name="GameRoot" type="Node2D"]
+script = ExtResource("1_root")
+
+[node name="RunSession" type="Node" parent="."]
+script = ExtResource("2_run")
+
+[node name="ScrollController" type="Node" parent="."]
+script = ExtResource("3_scroll")
+
+[node name="ObstacleSpawner" type="Node" parent="."]
+script = ExtResource("4_spawn")
+
+[node name="MultiplayerCoordinator" type="Node" parent="."]
+script = ExtResource("8_coord")
+
+[node name="World" type="Node2D" parent="."]
+
+[node name="RoadVisual" type="Node2D" parent="World"]
+script = ExtResource("7_road")
+
+[node name="Players" type="Node2D" parent="World"]
+
+[node name="Player" parent="World" instance=ExtResource("5_player")]
+position = Vector2(0, 560)
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("6_hud")
+
+[node name="Root" type="Control" parent="HUD"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="HUD/Root"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 520.0
+offset_bottom = 168.0
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+
+[node name="VBox" type="VBoxContainer" parent="HUD/Root/Margin"]
+layout_mode = 2
+
+[node name="ScoreLabel" type="Label" parent="HUD/Root/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "分數 0"
+
+[node name="ShieldLabel" type="Label" parent="HUD/Root/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "護盾 3 / 3"
+
+[node name="PeersShieldLabel" type="Label" parent="HUD/Root/Margin/VBox"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "連線護盾列"
+autowrap_mode = 3
+
+[node name="GameOverPanel" type="PanelContainer" parent="HUD/Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -80.0
+offset_right = 220.0
+offset_bottom = 80.0
+
+[node name="VBoxGO" type="VBoxContainer" parent="HUD/Root/GameOverPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="HUD/Root/GameOverPanel/VBoxGO"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "護盾耗盡"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="HUD/Root/GameOverPanel/VBoxGO"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "按 R 重新開始，Esc 暫停/繼續"
+horizontal_alignment = 1

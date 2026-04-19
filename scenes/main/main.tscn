@@ -1,8 +1,52 @@
-[gd_scene load_steps=2 format=3 uid="uid://main_scene"]
+[gd_scene load_steps=7 format=3 uid="uid://main_scene"]
 
 [ext_resource type="Script" path="res://scenes/main/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/net/NetworkLobby.tscn" id="1_lobby"]
+[ext_resource type="PackedScene" path="res://scenes/game/GameRoot.tscn" id="2_game"]
+[ext_resource type="AudioStream" path="res://assets/audio/Turbo Neon Circuit.mp3" id="3_bgm"]
+[ext_resource type="AudioStream" path="res://assets/audio/universfield-close-123784.mp3" id="4_damage_sfx"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_edge"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 64
+border_width_top = 64
+border_width_right = 64
+border_width_bottom = 64
+border_color = Color(0.95, 0.06, 0.08, 0.62)
+corner_detail = 1
 
 [node name="Main" type="Node2D"]
+process_mode = 3
 script = ExtResource("1_main")
 
+[node name="NetworkLobby" parent="." instance=ExtResource("1_lobby")]
+
+[node name="GameRoot" parent="." instance=ExtResource("2_game")]
+
 [node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(0, 560)
+zoom = Vector2(0.9, 0.9)
+
+[node name="DamageFeedback" type="CanvasLayer" parent="."]
+layer = 18
+
+[node name="DamageEdge" type="Panel" parent="DamageFeedback"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_edge")
+modulate = Color(1, 1, 1, 0)
+
+[node name="BGM" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("3_bgm")
+volume_db = -6.0
+bus = &"Master"
+
+[node name="DamageSFX" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("4_damage_sfx")
+volume_db = -2.0
+bus = &"Master"

@@ -18,6 +18,10 @@ func is_playing() -> bool:
 	return current_state == GameState.PLAYING
 
 
+func is_game_over() -> bool:
+	return current_state == GameState.GAME_OVER
+
+
 func pause() -> void:
 	if current_state == GameState.PLAYING:
 		change_state(GameState.PAUSED)

@@ -1,0 +1,62 @@
+[gd_scene load_steps=4 format=3 uid="uid://race_player"]
+
+[ext_resource type="Script" path="res://scripts/game/player/player.gd" id="1_player"]
+[ext_resource type="Script" path="res://scripts/game/player/player_state_machine.gd" id="2_fsm"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hurt"]
+size = Vector2(108, 58.9091)
+
+[node name="Player" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("1_player")
+
+[node name="PlayerStateMachine" type="Node" parent="."]
+script = ExtResource("2_fsm")
+
+[node name="CarBody" type="Sprite2D" parent="."]
+centered = true
+scale = Vector2(0.03835227, 0.03835227)
+
+[node name="HurtBox" type="Area2D" parent="."]
+collision_layer = 1
+collision_mask = 6
+monitoring = true
+monitorable = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBox"]
+shape = SubResource("RectangleShape2D_hurt")
+
+[node name="Thruster" type="CPUParticles2D" parent="."]
+z_index = -1
+emitting = false
+amount = 28
+lifetime = 0.5
+local_coords = true
+emission_shape = 1
+emission_sphere_radius = 5.0
+direction = Vector2(0, 1)
+spread = 22.0
+gravity = Vector2(0, 0)
+initial_velocity_min = 80.0
+initial_velocity_max = 160.0
+scale_amount_min = 2.0
+scale_amount_max = 4.5
+color = Color(0.45, 0.75, 1, 0.85)
+
+[node name="DriftSmoke" type="CPUParticles2D" parent="."]
+z_index = -2
+emitting = false
+amount = 22
+lifetime = 0.55
+local_coords = true
+emission_shape = 1
+emission_sphere_radius = 10.0
+direction = Vector2(0, 1)
+spread = 55.0
+gravity = Vector2(0, 0)
+initial_velocity_min = 20.0
+initial_velocity_max = 70.0
+scale_amount_min = 3.0
+scale_amount_max = 7.0
+color = Color(0.75, 0.78, 0.82, 0.45)

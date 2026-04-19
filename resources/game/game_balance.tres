@@ -1,0 +1,35 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/game/game_balance.gd" id="1_balance"]
+
+[resource]
+script = ExtResource("1_balance")
+base_scroll_speed = 220.0
+scroll_speed_max = 520.0
+scroll_ramp_per_score = 0.35
+lateral_accel = 2940.0
+lateral_friction = 19.5
+max_lateral_speed = 1140.0
+high_speed_steer_factor = 0.42
+handbrake_lateral_impulse = 360.0
+handbrake_duration_sec = 0.45
+handbrake_friction_mult = 0.35
+shield_max = 3
+shield_pickup_cap = 6
+invulnerable_after_hit_sec = 1.1
+invulnerable_pickup_sec = 7.0
+spawn_interval_start = 1.35
+spawn_interval_min = 0.38
+spawn_interval_per_score = 0.008
+weight_static = 1.0
+weight_drone = 0.85
+weight_laser = 0.65
+spawn_margin_x = 80.0
+spawn_y = -80.0
+despawn_y = 780.0
+drone_lateral_speed = 220.0
+drone_amplitude = 220.0
+laser_on_sec = 0.55
+laser_off_sec = 0.75
+player_anchor_y = 560.0
+half_lane_width = 420.0

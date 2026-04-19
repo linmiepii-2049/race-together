@@ -1,0 +1,12 @@
+{
+  "name": "race-car-signaling",
+  "private": true,
+  "description": "WebSocket signaling for RaceCar WebRTC (Godot-compatible protocol).",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test server.test.cjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

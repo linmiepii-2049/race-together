@@ -1,0 +1,103 @@
+[gd_scene load_steps=3 format=3 uid="uid://network_lobby"]
+
+[ext_resource type="Script" path="res://scripts/net/network_lobby.gd" id="1_lobby"]
+[ext_resource type="Script" path="res://scripts/net/webrtc_multiplayer_session.gd" id="2_rtc"]
+
+[node name="NetworkLobby" type="CanvasLayer"]
+layer = 40
+script = ExtResource("1_lobby")
+
+[node name="WebRtcMultiplayerSession" type="Node" parent="."]
+script = ExtResource("2_rtc")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -200.0
+offset_right = 280.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Root/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="Root/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="Root/Panel/Margin/VBox"]
+layout_mode = 2
+text = "連線大廳（最多 4 人）"
+
+[node name="UrlRow" type="HBoxContainer" parent="Root/Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="UrlLabel" type="Label" parent="Root/Panel/Margin/VBox/UrlRow"]
+layout_mode = 2
+text = "信令"
+
+[node name="UrlField" type="LineEdit" parent="Root/Panel/Margin/VBox/UrlRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "ws://127.0.0.1:9080"
+
+[node name="CodeRow" type="HBoxContainer" parent="Root/Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="CodeLabel" type="Label" parent="Root/Panel/Margin/VBox/CodeRow"]
+layout_mode = 2
+text = "房碼"
+
+[node name="CodeField" type="LineEdit" parent="Root/Panel/Margin/VBox/CodeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "建立房後自動填入，或輸入好友房碼"
+
+[node name="StatusLabel" type="Label" parent="Root/Panel/Margin/VBox"]
+layout_mode = 2
+autowrap_mode = 3
+text = "選擇單人開始，或建立／加入房間。"
+
+[node name="BtnSolo" type="Button" parent="Root/Panel/Margin/VBox"]
+layout_mode = 2
+text = "單人開始"
+
+[node name="BtnHost" type="Button" parent="Root/Panel/Margin/VBox"]
+layout_mode = 2
+text = "建立房間（房主）"
+
+[node name="BtnJoin" type="Button" parent="Root/Panel/Margin/VBox"]
+layout_mode = 2
+text = "加入房間"
+
+[node name="BtnSeal" type="Button" parent="Root/Panel/Margin/VBox"]
+layout_mode = 2
+text = "封房（房主，準備開玩）"
+
+[node name="BtnBeginNet" type="Button" parent="Root/Panel/Margin/VBox"]
+layout_mode = 2
+disabled = true
+text = "連線完成，進入遊戲"

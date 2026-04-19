@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3 uid="uid://obstacle_drone"]
+
+[ext_resource type="Script" path="res://scripts/game/obstacles/obstacle_drone.gd" id="1_script"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(132, 72.0455)
+
+[node name="ObstacleDrone" type="Area2D"]
+collision_layer = 2
+collision_mask = 0
+monitoring = true
+monitorable = true
+script = ExtResource("1_script")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Body" type="Sprite2D" parent="."]
+centered = true
+scale = Vector2(0.046875, 0.046875)
