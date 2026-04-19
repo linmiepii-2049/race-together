@@ -18,7 +18,18 @@ godot --headless --path . --export-release "Web" build/web/index.html
 工作流程：`.github/workflows/web.yml`
 
 - 每次推送到 `main` 或 `master` 會用 **Godot 4.6.2** 匯出 Web，並上傳 **Artifact** `web-export`。
-- 若要在 **GitHub Pages** 發佈：在倉庫 **Settings → Pages** 將 **Source** 設為 **GitHub Actions**（不要選 branch）。首次推送後，到 **Actions** 分頁確認 `deploy` 工作成功；網址通常為 `https://<使用者>.github.io/<倉庫名>/`。
+- **發佈到 GitHub Pages 前必做（否則 deploy 會 404）**  
+  1. 開啟倉庫 **Settings → Pages**（網址形如 `https://github.com/<使用者>/<倉庫>/settings/pages`）。  
+  2. **Build and deployment → Source** 選 **GitHub Actions**（**不要**選「Deploy from a branch」）。儲存。  
+  3. 開啟：**Settings → Actions → General → Workflow permissions** → 勾選 **Read and write permissions** → 儲存。（預設唯讀時 `deploy-pages` 無法建立部署。）  
+  4. 到 **Actions** 重新執行失敗的工作流程（Re-run all jobs）。  
+- 成功後網址通常為：`https://<使用者>.github.io/<倉庫名>/`（以 Pages 設定頁顯示為準）。
+
+### 仍出現 `Failed to create deployment (404)`
+
+- 再確認第 2 步是 **GitHub Actions**，不是 branch。  
+- 新倉庫有時需先儲存一次 Pages 設定，再等 1～2 分鐘後重跑 workflow。  
+- 下載 **Artifact `web-export`** 仍可手動部署到別的主機。
 
 ## 信令伺服器（多人必備）
 

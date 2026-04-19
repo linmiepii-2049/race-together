@@ -21,6 +21,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 向 Pages OIDC 註冊輸出目錄；缺少此步時 deploy-pages 常出現 404。
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
       - name: Setup Godot
         uses: chickensoft-games/setup-godot@v2
         with:
@@ -48,6 +52,9 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
