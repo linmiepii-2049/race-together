@@ -1,6 +1,7 @@
 # Godot
 .godot/
 *.import
+!assets/fonts/SourceHanSansTC-Regular.otf.import
 
 # Export 產物（預設由 CI 或本機 `godot --export-release` 產生）
 build/

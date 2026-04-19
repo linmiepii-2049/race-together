@@ -45,6 +45,9 @@ godot --headless --path . --export-release "Web" build/web/index.html
 
 ## 常見問題
 
+- **Web 上中文變方塊（亂碼／tofu）**  
+  瀏覽器沒有內建專案用的 CJK 字型。本專案已用 **Source Han Sans TC** 當 `gui/theme/custom` 全域字型（`resources/ui/app_theme.tres` + `assets/fonts/`）。若仍異常，確認匯出有帶入 `assets/fonts` 與對應 `.import`。
+
 - **匯出失敗：找不到 web_nothreads_release.zip**  
   代表本機未安裝對應版本的 Web export templates，請在 Godot 選單 **Editor → Manage Export Templates** 下載。
 - **網頁上多人連不上**  

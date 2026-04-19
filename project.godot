@@ -34,6 +34,11 @@ TaskScheduler="*res://scripts/autoload/task_scheduler.gd"
 window/size/viewport_width=1280
 window/size/viewport_height=720
 
+[gui]
+
+; Web 預設字型不含中文；用全域 Theme 嵌入 Source Han Sans TC（見 assets/fonts/FONT_LICENSE.txt）。
+theme/custom="res://resources/ui/app_theme.tres"
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/gut/plugin.cfg")
