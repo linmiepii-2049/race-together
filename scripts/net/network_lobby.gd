@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 signal solo_started
+signal back_to_menu
 
 const _ROOM := preload("res://scripts/net/room_code.gd")
 
@@ -14,6 +15,7 @@ const _ROOM := preload("res://scripts/net/room_code.gd")
 @onready var _btn_join: Button = $Root/Panel/Margin/VBox/BtnJoin
 @onready var _btn_seal: Button = $Root/Panel/Margin/VBox/BtnSeal
 @onready var _btn_begin_net: Button = $Root/Panel/Margin/VBox/BtnBeginNet
+@onready var _btn_back: Button = $Root/Panel/Margin/VBox/BtnBack
 @onready var _session: Node = $WebRtcMultiplayerSession
 
 
@@ -24,6 +26,7 @@ func _ready() -> void:
 	_btn_join.pressed.connect(_on_join)
 	_btn_seal.pressed.connect(_on_seal)
 	_btn_begin_net.pressed.connect(_on_begin_net)
+	_btn_back.pressed.connect(_on_back)
 	_session.lobby_joined.connect(_on_lobby_joined)
 	_session.disconnected.connect(_on_session_disconnected)
 	_btn_seal.disabled = true
@@ -39,6 +42,16 @@ func _on_solo() -> void:
 func _on_begin_net() -> void:
 	visible = false
 	solo_started.emit()
+
+
+func _on_back() -> void:
+	_session.stop()
+	visible = false
+	_btn_host.disabled = false
+	_btn_join.disabled = false
+	_btn_seal.disabled = true
+	_btn_begin_net.disabled = true
+	back_to_menu.emit()
 
 
 func _on_host() -> void:

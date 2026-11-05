@@ -11,13 +11,13 @@ func _ready() -> void:
 	add_to_group("multiplayer_coordinator")
 	_game_root = get_parent() as Node2D
 	GameManager.game_state_changed.connect(_on_game_state_changed)
-	if multiplayer.has_multiplayer_peer():
+	if GameManager.is_online_match():
 		multiplayer.peer_connected.connect(_on_peer_connected)
 		multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 
 
 func _physics_process(_delta: float) -> void:
-	if not multiplayer.has_multiplayer_peer():
+	if not GameManager.is_online_match():
 		return
 	if not multiplayer.is_server():
 		return
@@ -32,7 +32,7 @@ func _physics_process(_delta: float) -> void:
 	var sh: PackedInt32Array = rs.call("build_shield_packed") as PackedInt32Array
 	var inv: PackedInt32Array = rs.call("build_invuln_packed") as PackedInt32Array
 	var el: PackedInt32Array = rs.call("build_elim_packed") as PackedInt32Array
-	rpc_sync_run_state.rpc(rs.score, ids, sh, inv, el, go)
+	rpc_sync_run_state.rpc(rs.score, ids, sh, inv, el, go, int(rs.run_coins))
 
 
 @rpc("call_local", "reliable")
@@ -57,12 +57,13 @@ func rpc_sync_run_state(
 	invulns: PackedInt32Array,
 	elims: PackedInt32Array,
 	p_game_over: bool,
+	p_coins: int = -1,
 ) -> void:
-	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+	if GameManager.is_online_match() and multiplayer.is_server():
 		return
 	var rs: Node = _game_root.get_node("RunSession")
 	if rs.has_method("sync_from_host"):
-		rs.call("sync_from_host", p_score, peer_ids, shields, invulns, elims, p_game_over)
+		rs.call("sync_from_host", p_score, peer_ids, shields, invulns, elims, p_game_over, p_coins)
 
 
 @rpc("any_peer", "reliable")
@@ -104,6 +105,45 @@ func rpc_client_pickup_invulnerable(pickup_name: String) -> void:
 	rpc_pickup_recycle.rpc(pickup_name)
 
 
+@rpc("any_peer", "reliable")
+func rpc_client_pickup_coin(pickup_name: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var rs: Node = _game_root.get_node("RunSession")
+	var value := 1
+	var pts := 15
+	if _game_root.balance != null:
+		value = int(_game_root.balance.coin_value)
+		pts = int(_game_root.balance.coin_score)
+	rs.call("add_run_coins", value)
+	rs.call("add_score", pts)
+	rpc_pickup_recycle.rpc(pickup_name)
+
+
+@rpc("any_peer", "reliable")
+func rpc_client_pickup_magnet(pickup_name: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var rs: Node = _game_root.get_node("RunSession")
+	var pts := 15
+	if _game_root.balance != null:
+		pts = int(_game_root.balance.coin_score)
+	rs.call("add_score", pts)
+	rpc_pickup_recycle.rpc(pickup_name)
+
+
+@rpc("any_peer", "reliable")
+func rpc_client_bonus_score(points: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var limit := 200
+	if _game_root.balance != null:
+		var bal: Resource = _game_root.balance
+		limit = maxi(int(bal.near_miss_base_points) * int(bal.combo_max), int(bal.nitro_score_bonus))
+	var rs: Node = _game_root.get_node("RunSession")
+	rs.call("add_score", clampi(points, 0, limit))
+
+
 @rpc("call_local", "reliable")
 func rpc_pickup_invuln_fx(peer_id: int, duration_sec: float) -> void:
 	EventBus.pickup_invulnerability_for_peer.emit(peer_id, duration_sec)
@@ -139,13 +179,13 @@ func rpc_pickup_recycle(pickup_name: String) -> void:
 func _on_game_state_changed(state_name: String) -> void:
 	if state_name != "PLAYING":
 		return
-	if not multiplayer.has_multiplayer_peer():
+	if not GameManager.is_online_match():
 		return
 	call_deferred("_deferred_start_network_game")
 
 
 func _deferred_start_network_game() -> void:
-	if not multiplayer.has_multiplayer_peer():
+	if not GameManager.is_online_match():
 		return
 	_rebuild_players_from_peers()
 	if multiplayer.is_server():
@@ -185,7 +225,7 @@ func _rebuild_players_from_peers() -> void:
 func _on_peer_connected(_id: int) -> void:
 	if not GameManager.is_playing():
 		return
-	if not multiplayer.has_multiplayer_peer():
+	if not GameManager.is_online_match():
 		return
 	call_deferred("_rebuild_players_from_peers")
 

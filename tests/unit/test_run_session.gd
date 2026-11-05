@@ -32,6 +32,16 @@ func test_add_score_increments() -> void:
 	assert_eq(_rs.score, 5)
 
 
+func test_coins_do_not_change_shield() -> void:
+	_rs.call("add_run_coins", 4)
+	assert_eq(_rs.run_coins, 4)
+	assert_eq(_rs.shield, 3)
+	_rs.call("add_score", int(_balance.coin_score))
+	assert_eq(_rs.score, int(_balance.coin_score))
+	_rs.call("apply_magnet", 6.0)
+	assert_true(bool(_rs.call("magnet_active")))
+
+
 func test_three_hits_triggers_game_over() -> void:
 	_rs.call("register_hit_from_obstacle")
 	_rs.call("register_hit_from_obstacle")

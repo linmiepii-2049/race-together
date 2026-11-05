@@ -5,6 +5,8 @@ var balance: Resource
 ## 單人模式用；連線時護盾改存 _peer_shields。
 var score: int = 0
 var shield: int = 3
+var run_coins: int = 0
+var magnet_until_usec: int = 0
 var _invulnerable_until_usec: int = 0
 var _is_game_over: bool = false
 
@@ -19,10 +21,13 @@ func setup(p_balance: Resource) -> void:
 	_clear_multiplayer_state()
 	shield = balance.shield_max
 	score = 0
+	run_coins = 0
+	magnet_until_usec = 0
 	_is_game_over = false
 	_invulnerable_until_usec = 0
 	_emit_shield_changed()
 	EventBus.run_score_changed.emit(score)
+	EventBus.coins_changed.emit(run_coins)
 
 
 func _clear_multiplayer_state() -> void:
@@ -40,8 +45,11 @@ func init_peers_for_multiplayer(peer_ids: Array[int]) -> void:
 		_peer_invuln_usec[pid] = 0
 		_peer_eliminated[pid] = false
 	score = 0
+	run_coins = 0
+	magnet_until_usec = 0
 	_is_game_over = false
 	_emit_shield_changed()
+	EventBus.coins_changed.emit(run_coins)
 	_emit_multiplayer_peers_hud()
 
 
@@ -78,7 +86,7 @@ func is_invulnerable() -> bool:
 
 
 func is_invulnerable_for_peer(peer_id: int) -> bool:
-	if not multiplayer.has_multiplayer_peer():
+	if not GameManager.is_online_match():
 		return is_invulnerable()
 	var u: int = int(_peer_invuln_usec.get(peer_id, 0))
 	return Time.get_ticks_usec() < u
@@ -89,7 +97,7 @@ func is_game_over() -> bool:
 
 
 func is_peer_out(peer_id: int) -> bool:
-	if not multiplayer.has_multiplayer_peer():
+	if not GameManager.is_online_match():
 		return _is_game_over
 	return bool(_peer_eliminated.get(peer_id, false))
 
@@ -99,7 +107,7 @@ func get_invulnerable_until_usec() -> int:
 
 
 func get_invulnerable_until_usec_for_peer(peer_id: int) -> int:
-	if not multiplayer.has_multiplayer_peer():
+	if not GameManager.is_online_match():
 		return _invulnerable_until_usec
 	return int(_peer_invuln_usec.get(peer_id, 0))
 
@@ -111,8 +119,9 @@ func sync_from_host(
 	invulns: PackedInt32Array,
 	elims: PackedInt32Array,
 	p_game_over: bool,
+	p_coins: int = -1,
 ) -> void:
-	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+	if GameManager.is_online_match() and multiplayer.is_server():
 		return
 	score = p_score
 	_mp_peer_order.clear()
@@ -132,6 +141,9 @@ func sync_from_host(
 		_is_game_over = true
 		EventBus.run_game_over.emit("network")
 		GameManager.change_state(GameManager.GameState.GAME_OVER)
+	if p_coins >= 0:
+		run_coins = p_coins
+		EventBus.coins_changed.emit(run_coins)
 	EventBus.run_score_changed.emit(score)
 	_emit_shield_changed()
 	_emit_multiplayer_peers_hud()
@@ -142,6 +154,23 @@ func add_score(delta: int) -> void:
 		return
 	score = maxi(0, score + delta)
 	EventBus.run_score_changed.emit(score)
+
+
+func add_run_coins(amount: int) -> void:
+	if _is_game_over or amount == 0:
+		return
+	run_coins = maxi(0, run_coins + amount)
+	EventBus.coins_changed.emit(run_coins)
+
+
+func apply_magnet(duration_sec: float) -> void:
+	if _is_game_over:
+		return
+	magnet_until_usec = Time.get_ticks_usec() + int(duration_sec * 1_000_000.0)
+
+
+func magnet_active() -> bool:
+	return Time.get_ticks_usec() < magnet_until_usec
 
 
 func apply_pickup_shield() -> void:
@@ -159,7 +188,7 @@ func apply_pickup_invulnerable() -> void:
 
 
 func apply_pickup_shield_for_peer(peer_id: int) -> void:
-	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
+	if not GameManager.is_online_match() or not multiplayer.is_server():
 		return
 	if _is_game_over or balance == null:
 		return
@@ -174,7 +203,7 @@ func apply_pickup_shield_for_peer(peer_id: int) -> void:
 
 
 func apply_pickup_invulnerable_for_peer(peer_id: int) -> void:
-	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
+	if not GameManager.is_online_match() or not multiplayer.is_server():
 		return
 	if _is_game_over or balance == null:
 		return
@@ -185,7 +214,7 @@ func apply_pickup_invulnerable_for_peer(peer_id: int) -> void:
 
 func register_hit_from_obstacle() -> void:
 	# 連線對局以 init_peers_for_multiplayer 為準；僅有 peer 時才禁止此路徑。
-	if multiplayer.has_multiplayer_peer() and not _mp_peer_order.is_empty():
+	if GameManager.is_online_match() and not _mp_peer_order.is_empty():
 		return
 	if _is_game_over or balance == null:
 		return
@@ -200,7 +229,7 @@ func register_hit_from_obstacle() -> void:
 
 
 func register_hit_for_peer(peer_id: int) -> void:
-	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
+	if not GameManager.is_online_match() or not multiplayer.is_server():
 		return
 	if _is_game_over or balance == null:
 		return
@@ -249,15 +278,18 @@ func reset_session() -> void:
 	_clear_multiplayer_state()
 	shield = balance.shield_max
 	score = 0
+	run_coins = 0
+	magnet_until_usec = 0
 	_is_game_over = false
 	_invulnerable_until_usec = 0
 	_emit_shield_changed()
 	EventBus.run_score_changed.emit(score)
+	EventBus.coins_changed.emit(run_coins)
 	EventBus.multiplayer_peers_hud.emit("")
 
 
 func _emit_multiplayer_peers_hud() -> void:
-	if balance == null or not multiplayer.has_multiplayer_peer() or _mp_peer_order.is_empty():
+	if balance == null or not GameManager.is_online_match() or _mp_peer_order.is_empty():
 		return
 	var mx: int = balance.shield_max
 	var segs: PackedStringArray = PackedStringArray()
@@ -276,7 +308,7 @@ func _emit_multiplayer_peers_hud() -> void:
 func _emit_shield_changed() -> void:
 	if balance == null:
 		return
-	if multiplayer.has_multiplayer_peer():
+	if GameManager.is_online_match():
 		var my_id := multiplayer.get_unique_id()
 		var cur: int = int(_peer_shields.get(my_id, balance.shield_max))
 		var display_max: int = maxi(balance.shield_max, cur)

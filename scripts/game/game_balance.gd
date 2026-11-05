@@ -42,6 +42,37 @@ extends Resource
 @export var laser_on_sec: float = 0.55
 @export var laser_off_sec: float = 0.75
 
+@export_group("Near miss & combo")
+@export var near_miss_base_points: int = 25
+@export var combo_max: int = 8
+@export var combo_window_sec: float = 2.4
+@export var near_miss_hit_half: float = 54.0
+@export var near_miss_outer_half: float = 128.0
+
+@export_group("Nitro")
+@export var nitro_charge_per_sec: float = 0.45
+@export var nitro_boost_sec: float = 1.35
+@export var nitro_speed_mult: float = 1.65
+@export var nitro_score_bonus: int = 40
+
+@export_group("Coins")
+@export var coin_value: int = 1
+@export var coin_score: int = 15
+@export var magnet_sec: float = 6.0
+@export var magnet_pull_px: float = 520.0
+
+@export_group("Waves")
+@export var use_designed_waves: bool = true
+@export var wave_gap_sec: float = 1.15
+
+@export_group("Boss")
+@export var boss_hover_gap: float = 210.0
+@export var boss_lateral_speed: float = 280.0
+@export var boss_lunge_speed: float = 460.0
+@export var boss_lunge_sec: float = 0.45
+@export var boss_hover_sec: float = 1.6
+@export var boss_retreat_sec: float = 0.7
+
 @export_group("Playfield")
 @export var player_anchor_y: float = 560.0
 @export var half_lane_width: float = 420.0

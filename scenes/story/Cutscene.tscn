@@ -1,0 +1,59 @@
+[gd_scene load_steps=3 format=3 uid="uid://cutscene_player"]
+
+[ext_resource type="Script" path="res://scripts/story/cutscene_player.gd" id="1_cut"]
+[ext_resource type="Script" path="res://scripts/story/panel_art.gd" id="2_art"]
+
+[node name="Cutscene" type="CanvasLayer"]
+layer = 60
+visible = false
+script = ExtResource("1_cut")
+
+[node name="Dim" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0.02, 0.01, 0.06, 0.94)
+
+[node name="Center" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Panel" type="PanelContainer" parent="Center"]
+custom_minimum_size = Vector2(860, 520)
+
+[node name="Margin" type="MarginContainer" parent="Center/Panel"]
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 18
+
+[node name="VBox" type="VBoxContainer" parent="Center/Panel/Margin"]
+theme_override_constants/separation = 12
+
+[node name="Art" type="Control" parent="Center/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(800, 250)
+script = ExtResource("2_art")
+
+[node name="Speaker" type="Label" parent="Center/Panel/Margin/VBox"]
+theme_override_colors/font_color = Color(0.35, 1, 0.95, 1)
+theme_override_font_sizes/font_size = 22
+text = "旁白"
+
+[node name="Body" type="Label" parent="Center/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(800, 96)
+theme_override_font_sizes/font_size = 22
+text = "…"
+autowrap_mode = 3
+
+[node name="Hint" type="Label" parent="Center/Panel/Margin/VBox"]
+theme_override_colors/font_color = Color(1, 0.78, 0.35, 1)
+theme_override_font_sizes/font_size = 16
+text = "Enter／點擊繼續　　Esc 跳過"
+horizontal_alignment = 2

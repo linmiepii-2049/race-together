@@ -17,6 +17,9 @@ var lateral_vel: float = 0.0
 const DAMAGE_VISUAL_SUPPRESS_SHIELD_PULSE_USEC := 280_000
 const CAR_TEXTURE_PATH := "res://assets/sprites/Gemini_Generated_Image_bm0laibm0laibm0l_3.png"
 const _SpriteTextureUtil := preload("res://scripts/game/sprite_texture_util.gd")
+const _CarSkins := preload("res://scripts/game/car_skins.gd")
+const _THRUSTER_BASE := Color(0.45, 0.75, 1, 0.85)
+const _THRUSTER_BOOST := Color(1.0, 0.85, 0.3, 0.95)
 ## 連線時依權威 peer id 取色，最多 4 人房與盤點長度對齊。
 const _MULTIPLAYER_CAR_MODULATES: Array[Color] = [
 	Color(1.0, 0.45, 0.42),
@@ -24,10 +27,8 @@ const _MULTIPLAYER_CAR_MODULATES: Array[Color] = [
 	Color(0.48, 0.68, 1.0),
 	Color(1.0, 0.82, 0.38),
 ]
-## 單人模式車身色（貼圖上再疊乘 modulate）。
-const _SOLO_CAR_MODULATE := Color(0.62, 0.88, 1.0, 1.0)
-
 var _machine: Node
+var _rules: RefCounted
 ##  hurtbox 在車身左右佔寬的一半，夾車道時須扣掉以免貼圖越線。
 var _lateral_bb_half: float = 0.0
 var _car_body_modulate_base: Color = Color.WHITE
@@ -60,13 +61,15 @@ func setup(
 	p_run: Node,
 	p_scroll: Node,
 	p_spawner: Node,
-	p_machine: Node
+	p_machine: Node,
+	p_rules: RefCounted = null,
 ) -> void:
 	balance = p_balance
 	run_session = p_run
 	scroll_controller = p_scroll
 	spawner = p_spawner
 	_machine = p_machine
+	_rules = p_rules
 	position.y = balance.player_anchor_y
 	lateral_vel = 0.0
 	if hurtbox:
@@ -118,12 +121,15 @@ func _physics_process(_delta: float) -> void:
 func _apply_car_body_modulate() -> void:
 	if car_body == null:
 		return
-	if multiplayer.has_multiplayer_peer():
+	if GameManager.is_online_match():
 		var pid: int = get_multiplayer_authority()
 		var idx: int = absi(pid) % _MULTIPLAYER_CAR_MODULATES.size()
 		_car_body_modulate_base = _MULTIPLAYER_CAR_MODULATES[idx]
 	else:
-		_car_body_modulate_base = _SOLO_CAR_MODULATE
+		var skin_id := "cyan"
+		if GameManager.profile != null:
+			skin_id = str(GameManager.profile.selected_skin)
+		_car_body_modulate_base = _CarSkins.color_of(skin_id)
 	car_body.modulate = _car_body_modulate_base
 
 
@@ -136,12 +142,12 @@ func reset_player() -> void:
 		_machine.reset_machine()
 
 
-func apply_control(steer_axis: float, handbrake_pressed: bool, handbrake_held: bool, delta: float) -> void:
+func apply_control(steer_axis: float, handbrake_pressed: bool, handbrake_held: bool, delta: float, nitro_pressed: bool = false) -> void:
 	if balance == null or run_session == null or scroll_controller == null or _machine == null:
 		return
 	if run_session.is_game_over() or not GameManager.is_playing():
 		return
-	if multiplayer.has_multiplayer_peer() and bool(run_session.call("is_peer_out", get_multiplayer_authority())):
+	if GameManager.is_online_match() and bool(run_session.call("is_peer_out", get_multiplayer_authority())):
 		return
 	_machine.process_machine(delta, balance)
 	if handbrake_pressed:
@@ -150,6 +156,11 @@ func apply_control(steer_axis: float, handbrake_pressed: bool, handbrake_held: b
 			lateral_vel += sign(steer_axis) * balance.handbrake_lateral_impulse
 		elif abs(lateral_vel) > 30.0:
 			lateral_vel -= sign(lateral_vel) * balance.handbrake_lateral_impulse * 0.5
+	if _rules != null:
+		_rules.charge_nitro(delta, _machine.is_handbrake(), balance)
+		if nitro_pressed and bool(_rules.try_start_boost()):
+			_machine.notify_boost(balance)
+			_grant_boost_score()
 	var scroll_speed: float = scroll_controller.get_scroll_speed()
 	var speed_ratio: float = clampf(scroll_speed / maxf(balance.scroll_speed_max, 1.0), 0.0, 1.0)
 	var steer_scale: float = lerpf(1.0, balance.high_speed_steer_factor, speed_ratio)
@@ -166,11 +177,13 @@ func apply_control(steer_axis: float, handbrake_pressed: bool, handbrake_held: b
 	var lim: float = _lateral_position_limit()
 	position.x = clampf(position.x, -lim, lim)
 	velocity = Vector2.ZERO
+	var boosting: bool = _machine.is_boosting()
 	if thruster:
-		thruster.emitting = abs(steer_axis) > 0.05 or handbrake_held
+		thruster.emitting = abs(steer_axis) > 0.05 or handbrake_held or boosting
+		thruster.color = _THRUSTER_BOOST if boosting else _THRUSTER_BASE
 	if drift_smoke:
-		drift_smoke.emitting = _machine.is_handbrake()
-	if multiplayer.has_multiplayer_peer() and is_multiplayer_authority():
+		drift_smoke.emitting = _machine.is_handbrake() or boosting
+	if GameManager.is_online_match() and is_multiplayer_authority():
 		var coord: Node = get_tree().get_first_node_in_group("multiplayer_coordinator") as Node
 		if coord != null and coord.has_method("rpc_player_lateral"):
 			coord.rpc_player_lateral.rpc(multiplayer.get_unique_id(), position.x)
@@ -180,7 +193,7 @@ func _on_hurtbox_area_entered(area: Area2D) -> void:
 	if run_session == null:
 		return
 	var coord: Node = get_tree().get_first_node_in_group("multiplayer_coordinator") as Node
-	var online := multiplayer.has_multiplayer_peer()
+	var online := GameManager.is_online_match()
 	if area.is_in_group("obstacles"):
 		if area is Area2D and not (area as Area2D).monitoring:
 			return
@@ -192,37 +205,70 @@ func _on_hurtbox_area_entered(area: Area2D) -> void:
 		else:
 			run_session.register_hit_from_obstacle()
 	elif area.is_in_group("pickups"):
+		var kind := int(area.call("get_pickup_type")) if area.has_method("get_pickup_type") else 0
 		if online and coord != null:
 			if multiplayer.is_server():
 				_apply_pickup_effect(area)
 				coord.rpc_pickup_recycle.rpc(area.name)
 			else:
-				if area.has_method("is_shield_pickup") and bool(area.call("is_shield_pickup")):
-					coord.rpc_client_pickup_shield.rpc(area.name)
-				else:
-					coord.rpc_client_pickup_invulnerable.rpc(area.name)
+				match kind:
+					2:
+						coord.rpc_client_pickup_coin.rpc(area.name)
+					3:
+						coord.rpc_client_pickup_magnet.rpc(area.name)
+					0:
+						coord.rpc_client_pickup_shield.rpc(area.name)
+					_:
+						coord.rpc_client_pickup_invulnerable.rpc(area.name)
 		else:
 			_apply_pickup_effect(area)
 			pickup_hit.emit(area)
 
 
+func _grant_boost_score() -> void:
+	if run_session == null or balance == null:
+		return
+	var pts := int(balance.nitro_score_bonus)
+	if not GameManager.is_online_match() or multiplayer.is_server():
+		run_session.add_score(pts)
+		return
+	var coord := get_tree().get_first_node_in_group("multiplayer_coordinator") as Node
+	if coord != null and coord.has_method("rpc_client_bonus_score"):
+		coord.rpc_client_bonus_score.rpc(pts)
+
+
 func _apply_pickup_effect(area: Area2D) -> void:
-	if area.has_method("is_shield_pickup"):
-		var is_shield := bool(area.call("is_shield_pickup"))
-		if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
-			var pid := get_multiplayer_authority()
-			if is_shield:
+	var kind := int(area.call("get_pickup_type")) if area.has_method("get_pickup_type") else 0
+	var online_host := GameManager.is_online_match() and multiplayer.is_server()
+	var pid := get_multiplayer_authority() if online_host else 0
+	match kind:
+		0:
+			if online_host:
 				run_session.call("apply_pickup_shield_for_peer", pid)
 			else:
+				run_session.apply_pickup_shield()
+		2:
+			_grant_coin()
+		3:
+			if not GameManager.is_online_match():
+				run_session.apply_magnet(balance.magnet_sec)
+			if online_host or not GameManager.is_online_match():
+				run_session.add_score(int(balance.coin_score))
+		_:
+			if online_host:
 				run_session.call("apply_pickup_invulnerable_for_peer", pid)
 				var c: Node = get_tree().get_first_node_in_group("multiplayer_coordinator") as Node
 				if c != null and c.has_method("rpc_pickup_invuln_fx"):
 					c.rpc_pickup_invuln_fx.rpc(pid, balance.invulnerable_pickup_sec)
-		else:
-			if is_shield:
-				run_session.apply_pickup_shield()
 			else:
 				run_session.apply_pickup_invulnerable()
+
+
+func _grant_coin() -> void:
+	if run_session == null or balance == null:
+		return
+	run_session.add_run_coins(int(balance.coin_value))
+	run_session.add_score(int(balance.coin_score))
 
 
 func _on_shield_changed(_current: int, _maximum: int) -> void:
