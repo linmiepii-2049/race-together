@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://game_root"]
+[gd_scene load_steps=16 format=3 uid="uid://game_root"]
 
 [ext_resource type="Script" path="res://scripts/game/game_root.gd" id="1_root"]
 [ext_resource type="Script" path="res://scripts/game/run_session.gd" id="2_run"]
@@ -8,6 +8,12 @@
 [ext_resource type="Script" path="res://scripts/game/ui/game_hud.gd" id="6_hud"]
 [ext_resource type="Script" path="res://scripts/game/road_visual.gd" id="7_road"]
 [ext_resource type="Script" path="res://scripts/game/multiplayer_coordinator.gd" id="8_coord"]
+[ext_resource type="Script" path="res://scripts/game/ui/shield_icons.gd" id="9_shield"]
+[ext_resource type="Script" path="res://scripts/game/ui/speed_gauge.gd" id="10_gauge"]
+[ext_resource type="Script" path="res://scripts/game/ui/meter_bar.gd" id="11_meter"]
+[ext_resource type="Script" path="res://scripts/game/near_miss_detector.gd" id="12_near"]
+[ext_resource type="Script" path="res://scripts/story/chapter_director.gd" id="13_chapter"]
+[ext_resource type="PackedScene" path="res://scenes/ui/Results.tscn" id="14_results"]
 
 [node name="GameRoot" type="Node2D"]
 script = ExtResource("1_root")
@@ -34,6 +40,14 @@ script = ExtResource("7_road")
 [node name="Player" parent="World" instance=ExtResource("5_player")]
 position = Vector2(0, 560)
 
+[node name="NearMissDetector" type="Node" parent="."]
+script = ExtResource("12_near")
+
+[node name="ChapterDirector" type="Node" parent="."]
+script = ExtResource("13_chapter")
+
+[node name="Results" parent="." instance=ExtResource("14_results")]
+
 [node name="HUD" type="CanvasLayer" parent="."]
 script = ExtResource("6_hud")
 
@@ -44,66 +58,134 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
-[node name="Margin" type="MarginContainer" parent="HUD/Root"]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 0.0
-anchor_top = 0.0
-anchor_right = 0.0
-anchor_bottom = 0.0
-offset_left = 16.0
+[node name="TopLeft" type="VBoxContainer" parent="HUD/Root"]
+layout_mode = 0
+offset_left = 24.0
 offset_top = 16.0
-offset_right = 520.0
-offset_bottom = 168.0
-theme_override_constants/margin_left = 8
-theme_override_constants/margin_top = 8
+offset_right = 460.0
+offset_bottom = 230.0
+theme_override_constants/separation = 2
 
-[node name="VBox" type="VBoxContainer" parent="HUD/Root/Margin"]
+[node name="ChapterLabel" type="Label" parent="HUD/Root/TopLeft"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 1, 0.96, 1)
+theme_override_font_sizes/font_size = 20
+text = "無盡迴廊"
 
-[node name="ScoreLabel" type="Label" parent="HUD/Root/Margin/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "分數 0"
-
-[node name="ShieldLabel" type="Label" parent="HUD/Root/Margin/VBox"]
+[node name="ScoreLabel" type="Label" parent="HUD/Root/TopLeft"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
-text = "護盾 3 / 3"
+text = "分數  0"
 
-[node name="PeersShieldLabel" type="Label" parent="HUD/Root/Margin/VBox"]
+[node name="CoinLabel" type="Label" parent="HUD/Root/TopLeft"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0.35, 1)
+theme_override_font_sizes/font_size = 20
+text = "金幣  0"
+
+[node name="ComboLabel" type="Label" parent="HUD/Root/TopLeft"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.45, 0.78, 1)
+theme_override_font_sizes/font_size = 20
+text = ""
+
+[node name="PopupLabel" type="Label" parent="HUD/Root/TopLeft"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 1, 0.85, 1)
+theme_override_font_sizes/font_size = 20
+text = "擦身  +0"
+
+[node name="ShieldIcons" type="Control" parent="HUD/Root/TopLeft"]
+custom_minimum_size = Vector2(180, 26)
+layout_mode = 2
+script = ExtResource("9_shield")
+
+[node name="PeersShieldLabel" type="Label" parent="HUD/Root/TopLeft"]
 visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "連線護盾列"
 autowrap_mode = 3
 
-[node name="GameOverPanel" type="PanelContainer" parent="HUD/Root"]
+[node name="TopRight" type="VBoxContainer" parent="HUD/Root"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -150.0
+offset_top = 12.0
+offset_right = -18.0
+offset_bottom = 150.0
+grow_horizontal = 0
+alignment = 1
+
+[node name="SpeedCaption" type="Label" parent="HUD/Root/TopRight"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "速度"
+horizontal_alignment = 1
+
+[node name="SpeedGauge" type="Control" parent="HUD/Root/TopRight"]
+custom_minimum_size = Vector2(110, 78)
+layout_mode = 2
+script = ExtResource("10_gauge")
+
+[node name="SpeedValue" type="Label" parent="HUD/Root/TopRight"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.4, 1)
+theme_override_font_sizes/font_size = 20
+text = "0"
+horizontal_alignment = 1
+
+[node name="Bottom" type="VBoxContainer" parent="HUD/Root"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -108.0
+offset_right = 420.0
+offset_bottom = -18.0
+grow_vertical = 0
+theme_override_constants/separation = 4
+
+[node name="NitroCaption" type="Label" parent="HUD/Root/Bottom"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "氮氣"
+
+[node name="NitroBar" type="Control" parent="HUD/Root/Bottom"]
+custom_minimum_size = Vector2(360, 16)
+layout_mode = 2
+script = ExtResource("11_meter")
+fill = Color(1, 0.72, 0.25, 1)
+
+[node name="ProgressCaption" type="Label" parent="HUD/Root/Bottom"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "距離  0"
+
+[node name="ProgressBar" type="Control" parent="HUD/Root/Bottom"]
+custom_minimum_size = Vector2(360, 16)
+layout_mode = 2
+script = ExtResource("11_meter")
+
+[node name="Tutorial" type="Label" parent="HUD/Root"]
 visible = false
 layout_mode = 1
-anchors_preset = 8
+anchors_preset = 5
 anchor_left = 0.5
-anchor_top = 0.5
 anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -220.0
-offset_top = -80.0
-offset_right = 220.0
-offset_bottom = 80.0
-
-[node name="VBoxGO" type="VBoxContainer" parent="HUD/Root/GameOverPanel"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="Title" type="Label" parent="HUD/Root/GameOverPanel/VBoxGO"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 26
-text = "護盾耗盡"
+offset_left = -340.0
+offset_top = 18.0
+offset_right = 340.0
+offset_bottom = 64.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 0.95, 0.85, 1)
+theme_override_font_sizes/font_size = 20
+text = "教學"
 horizontal_alignment = 1
-
-[node name="Hint" type="Label" parent="HUD/Root/GameOverPanel/VBoxGO"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "按 R 重新開始，Esc 暫停/繼續"
-horizontal_alignment = 1
+autowrap_mode = 3

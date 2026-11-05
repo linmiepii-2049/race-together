@@ -11,6 +11,10 @@ extends Node2D
 @onready var player: CharacterBody2D = $World/Player
 @onready var hud: CanvasLayer = $HUD
 @onready var player_machine: Node = $World/Player/PlayerStateMachine
+@onready var near_miss: Node = $NearMissDetector
+
+const _ScoreRules := preload("res://scripts/game/score_rules.gd")
+var _rules: RefCounted = _ScoreRules.new()
 
 
 func _ready() -> void:
@@ -24,16 +28,18 @@ func _ready() -> void:
 	if road_visual.has_method("setup"):
 		road_visual.call("setup", balance, scroll_controller)
 	if player.has_method("setup"):
-		player.setup(balance, run_session, scroll_controller, obstacle_spawner, player_machine)
+		player.setup(balance, run_session, scroll_controller, obstacle_spawner, player_machine, _rules)
+	if near_miss.has_method("setup"):
+		near_miss.setup(balance, run_session, world, _rules)
 	if player.has_signal("pickup_hit"):
 		player.pickup_hit.connect(_on_pickup_hit)
-	if not multiplayer.has_multiplayer_peer():
+	if not GameManager.is_online_match():
 		player.add_to_group("local_player")
 
 
 func register_spawned_player(p: CharacterBody2D) -> void:
 	var machine: Node = p.get_node("PlayerStateMachine")
-	p.setup(balance, run_session, scroll_controller, obstacle_spawner, machine)
+	p.setup(balance, run_session, scroll_controller, obstacle_spawner, machine, _rules)
 	if p.has_signal("pickup_hit") and not p.pickup_hit.is_connected(_on_pickup_hit):
 		p.pickup_hit.connect(_on_pickup_hit)
 	p.remove_from_group("local_player")
@@ -60,10 +66,18 @@ func _physics_process(delta: float) -> void:
 	var steer: float = _compute_steer_axis()
 	var hb_pressed := Input.is_action_just_pressed("handbrake")
 	var hb_held := Input.is_action_pressed("handbrake")
+	var nitro_pressed := Input.is_action_just_pressed("nitro")
 	for p in _iter_controlled_players():
 		if p is CharacterBody2D and p.has_method("apply_control"):
-			if not multiplayer.has_multiplayer_peer() or p.get_multiplayer_authority() == multiplayer.get_unique_id():
-				(p as CharacterBody2D).apply_control(steer, hb_pressed, hb_held, delta)
+			if not GameManager.is_online_match() or p.get_multiplayer_authority() == multiplayer.get_unique_id():
+				(p as CharacterBody2D).apply_control(steer, hb_pressed, hb_held, delta, nitro_pressed)
+	var boosting := player_machine != null and player_machine.has_method("is_boosting") and bool(player_machine.call("is_boosting"))
+	if not GameManager.is_online_match():
+		scroll_controller.set_boosting(boosting, balance.nitro_speed_mult)
+	if _rules != null:
+		_rules.tick(delta, balance)
+		EventBus.nitro_changed.emit(_rules.nitro, boosting)
+		EventBus.combo_changed.emit(_rules.combo)
 	obstacle_spawner.cull_offscreen()
 
 

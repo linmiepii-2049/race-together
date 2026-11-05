@@ -6,6 +6,7 @@ const ObstacleStaticScene := preload("res://scenes/game/obstacles/ObstacleStatic
 const ObstacleDroneScene := preload("res://scenes/game/obstacles/ObstacleDrone.tscn")
 const ObstacleLaserScene := preload("res://scenes/game/obstacles/ObstacleLaser.tscn")
 const PickupScene := preload("res://scenes/game/pickups/Pickup.tscn")
+const _WaveScript := preload("res://scripts/game/wave_script.gd")
 
 var balance: Resource
 var run_session: Node
@@ -20,6 +21,7 @@ var _pool_static: Array[Node] = []
 var _pool_drone: Array[Node] = []
 var _pool_laser: Array[Node] = []
 var _pool_pickup: Array[Node] = []
+var _waves: RefCounted = _WaveScript.new()
 
 
 func setup(p_balance: Resource, p_run: Node, p_scroll: Node, p_world: Node2D) -> void:
@@ -29,6 +31,16 @@ func setup(p_balance: Resource, p_run: Node, p_scroll: Node, p_world: Node2D) ->
 	world = p_world
 	_rng.randomize()
 	_spawn_cooldown = 0.4
+	_waves.set_set(_WaveScript.SET_CITY)
+
+
+func _ready() -> void:
+	if not EventBus.wave_set_requested.is_connected(set_wave_set):
+		EventBus.wave_set_requested.connect(set_wave_set)
+
+
+func set_wave_set(set_name: String) -> void:
+	_waves.set_set(set_name)
 
 
 func set_run_seed(run_seed: int) -> void:
@@ -38,8 +50,8 @@ func set_run_seed(run_seed: int) -> void:
 func apply_net_spawn(kind: int, px: float, py: float, pickup_counter: int) -> void:
 	_pickup_counter = pickup_counter
 	var pos := Vector2(px, py)
-	if kind == -1:
-		_spawn_pickup(pos)
+	if kind < 0:
+		_spawn_pickup_kind(pos, kind)
 		return
 	match int(kind):
 		ObstacleKind.STATIC:
@@ -53,9 +65,14 @@ func apply_net_spawn(kind: int, px: float, py: float, pickup_counter: int) -> vo
 func _physics_process(delta: float) -> void:
 	if balance == null or run_session == null or world == null:
 		return
-	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+	if GameManager.is_online_match() and not multiplayer.is_server():
 		return
 	if run_session.is_game_over() or not GameManager.is_playing():
+		return
+	if balance.use_designed_waves:
+		var spawned: Array = _waves.advance(delta, balance.wave_gap_sec)
+		for ev in spawned:
+			_spawn_wave_event(ev as Dictionary)
 		return
 	_spawn_cooldown -= delta
 	if _spawn_cooldown > 0.0:
@@ -82,6 +99,27 @@ func _pick_kind_weighted() -> ObstacleKind:
 	return ObstacleKind.LASER
 
 
+func _spawn_wave_event(ev: Dictionary) -> void:
+	var lane := int(ev["lane"])
+	var kind := int(ev["kind"])
+	var half: float = balance.get_road_playfield_half_width()
+	var pos := Vector2(_waves.lane_x(lane, half), balance.spawn_y)
+	var coord: Node = get_parent().get_node_or_null("MultiplayerCoordinator")
+	if GameManager.is_online_match() and coord != null:
+		coord.rpc_net_ob_spawn.rpc(kind, pos.x, pos.y, _pickup_counter)
+		return
+	if kind < 0:
+		_spawn_pickup_kind(pos, kind)
+		return
+	match kind:
+		ObstacleKind.STATIC:
+			_activate_static(pos)
+		ObstacleKind.DRONE:
+			_activate_drone(pos)
+		ObstacleKind.LASER:
+			_activate_laser(pos)
+
+
 func _spawn_one() -> void:
 	var half: float = balance.get_road_playfield_half_width()
 	var margin: float = balance.spawn_margin_x
@@ -89,7 +127,7 @@ func _spawn_one() -> void:
 	var y: float = balance.spawn_y
 	_pickup_counter += 1
 	var coord: Node = get_parent().get_node_or_null("MultiplayerCoordinator")
-	if multiplayer.has_multiplayer_peer() and coord != null:
+	if GameManager.is_online_match() and coord != null:
 		if _pickup_counter >= 7:
 			_pickup_counter = 0
 			coord.rpc_net_ob_spawn.rpc(-1, x, y, 0)
@@ -184,6 +222,10 @@ func _activate_laser(pos: Vector2) -> void:
 
 
 func _spawn_pickup(pos: Vector2) -> void:
+	_spawn_pickup_kind(pos, -99)
+
+
+func _spawn_pickup_kind(pos: Vector2, kind: int) -> void:
 	var n := _get_from_pool(_pool_pickup, PickupScene)
 	n.name = "Pickup_%d" % Time.get_ticks_msec()
 	n.process_mode = Node.PROCESS_MODE_INHERIT
@@ -191,8 +233,18 @@ func _spawn_pickup(pos: Vector2) -> void:
 	n.position = pos
 	if n is Area2D:
 		(n as Area2D).monitoring = true
+	var forced := -1
+	match kind:
+		_WaveScript.KIND_COIN:
+			forced = 2
+		_WaveScript.KIND_MAGNET:
+			forced = 3
+		_WaveScript.KIND_SHIELD:
+			forced = 0
+		_WaveScript.KIND_INVULN:
+			forced = 1
 	if n.has_method("activate"):
-		n.call("activate", balance, run_session, scroll_controller)
+		n.call("activate", balance, run_session, scroll_controller, forced)
 
 
 func cull_offscreen() -> void:
